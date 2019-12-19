@@ -1,5 +1,5 @@
 import pygame, sys, time, random
-from pygame.locals import QUIT, KEYUP, K_ESCAPE, KEYDOWN, K_LEFT, K_RIGHT, K_DOWN
+from pygame.locals import QUIT, KEYUP, K_ESCAPE, KEYDOWN, K_LEFT, K_RIGHT, K_DOWN, K_UP
 
 BLUE = (0, 0, 155)
 BOX_SIZE = 20
@@ -13,6 +13,13 @@ S_SHAPE_TEMPLATE = [[
     '..cc.',
     '.cc..',
     '.....'
+],
+[
+    '.....',
+    '..c..',
+    '..cc.',
+    '...c.',
+    '.....'
 ]]
 
 S_INVERTED_SHAPE_TEMPLATE = [[
@@ -21,6 +28,13 @@ S_INVERTED_SHAPE_TEMPLATE = [[
     '.cc..',
     '..cc.',
     '.....'
+],
+[
+    '.....',
+    '..c..',
+    '.cc..',
+    '.c...',
+    '.....'
 ]]
 
 I_SHAPE_TEMPLATE = [[
@@ -28,6 +42,13 @@ I_SHAPE_TEMPLATE = [[
     '..c..',
     '..c..',
     '..c..',
+    '.....'
+],
+[
+    '.....',
+    '.....',
+    'cccc.',
+    '.....',
     '.....'
 ]]
 
@@ -45,6 +66,27 @@ L_SHAPE_TEMPLATE = [[
     '.c...',
     '.ccc.',
     '.....'
+],
+[
+    '.....',
+    '.....',
+    '.cc..',
+    '.c...',
+    '.c...'
+],
+[
+    '.....',
+    '.....',
+    '.ccc.',
+    '...c.',
+    '.....'
+],
+[
+    '.....',
+    '.....',
+    '...c.',
+    '...c.',
+    '..cc.'
 ]]
 
 L_INVERTED_SHAPE_TEMPLATE = [[
@@ -53,6 +95,27 @@ L_INVERTED_SHAPE_TEMPLATE = [[
     '...c.',
     '.ccc.',
     '.....'
+],
+[
+    '.....',
+    '.....',
+    '..cc.',
+    '...c.',
+    '...c.'
+],
+[
+    '.....',
+    '.....',
+    '.ccc.',
+    '.c...',
+    '.....'
+],
+[
+    '.....',
+    '.....',
+    '..c..',
+    '..c..',
+    '..cc.'
 ]]
 
 T_SHAPE_TEMPLATE = [[
@@ -61,6 +124,27 @@ T_SHAPE_TEMPLATE = [[
     '..c..',
     '.ccc.',
     '.....'
+],
+[
+    '.....',
+    '.....',
+    '..c..',
+    '..cc.',
+    '..c..'
+],
+[
+    '.....',
+    '.....',
+    '..c..',
+    '.cc..',
+    '..c..'
+],
+[
+    '.....',
+    '.....',
+    '.....',
+    '.ccc.',
+    '..c..'
 ]]
 
 def runTetrisGame(): 
@@ -124,13 +208,12 @@ def createPiece():
     randomShape = random.choice(list(availableTetrisPieces().keys()))
     piece['shape'] = randomShape
     piece['row'] = 0
+    piece['rotation'] = 0
     piece['column'] = 2
     
     return piece
 
 def drawBoard(screen, gameMatrix):
-    whiteColor = (255, 255, 255)
-    grayColor = (217, 222, 226)
     gameMatrixColumns = 10
     gameMatrixRows = 20
 
@@ -138,14 +221,16 @@ def drawBoard(screen, gameMatrix):
         for j in range(gameMatrixColumns):
             if(gameMatrix[i][j] == 'c'):
                 if(gameMatrix[i][j] != '.'):
-                    drawSingleTetrisBox(screen, i, j, (255, 255, 255), (217, 222, 226))
+                    drawSingleTetrisBox(screen, i, j, (225, 255, 255), (217, 222, 226))
 
 def drawSingleTetrisBox(screen, row, column, whiteColor, grayColor):
    originX = 100 + 5 + (column * 20 + 1)
    originY = 50 + 5 + (row * 20 +1)
 
+   randomColor = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
    pygame.draw.rect(screen, grayColor, [originX, originY, 20, 20])
-   pygame.draw.rect(screen, whiteColor, [originX, originY, 18, 18]) 
+   pygame.draw.rect(screen, randomColor, [originX, originY, 18, 18]) 
 
 def listenToUserInput(gameMatrix, piece):
     for event in pygame.event.get():
@@ -156,9 +241,13 @@ def listenToUserInput(gameMatrix, piece):
                 piece['column'] += 1
             elif (event.key == K_DOWN) and isValidPosition(gameMatrix, piece, adjRow = 1):
                 piece['row'] += 1
+            elif (event.key == K_UP):
+                piece['rotation'] = (piece['rotation'] + 1) % len(availableTetrisPieces()[piece['shape']])
+                if not isValidPosition(gameMatrix, piece):
+                    piece['rotation'] = (piece['rotation'] - 1) % len(availableTetrisPieces()[piece['shape']])
 
 def isValidPosition(gameMatrix, piece, adjColumn = 0, adjRow = 0):
-    pieceMatrix = availableTetrisPieces()[piece['shape']][0]
+    pieceMatrix = availableTetrisPieces()[piece['shape']][piece['rotation']]
 
     for row in range(5):
         for col in range(5):
@@ -212,7 +301,7 @@ def availableTetrisPieces():
     }
 
 def drawMovingPiece(screen, piece):
-    shapeToDraw = availableTetrisPieces()[piece['shape']][0]
+    shapeToDraw = availableTetrisPieces()[piece['shape']][piece['rotation']]
     for row in range(5):
         for col in range(5):
             if shapeToDraw[row][col] != '.':
@@ -221,7 +310,7 @@ def drawMovingPiece(screen, piece):
 def updateGameMatrix(matrix, piece):
     for row in range (5):
         for col in range(5):
-            if(availableTetrisPieces()[piece['shape']][0][row][col] != '.'):
+            if(availableTetrisPieces()[piece['shape']][piece['rotation']][row][col] != '.'):
                 matrix[piece['row'] + row][piece['column'] + col] = 'c'
 
     return matrix
